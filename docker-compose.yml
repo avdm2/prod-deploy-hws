@@ -1,0 +1,36 @@
+services:
+  db:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: db
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    healthcheck:
+      test: pg_isready -d db
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 15s
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@admin.com
+      PGADMIN_DEFAULT_PASSWORD: pass
+    restart: always
+    ports:
+      - "8080:80"
+    networks:
+      - postgres
+    depends_on:
+      - db
+
+networks:
+  postgres:
+    driver: bridge
