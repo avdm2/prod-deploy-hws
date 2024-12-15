@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -21,11 +21,7 @@ public class TaskService {
         return taskRepository.findAll().map(taskMapper::convert);
     }
 
-    public Mono<TaskDTO> findByUuid(UUID uuid) {
-        return taskRepository.findByUuid(uuid).map(taskMapper::convert);
-    }
-
-    public Mono<UUID> addTask(TaskDTO taskDTO) {
-        return taskRepository.save(taskMapper.convert(taskDTO)).thenReturn(taskDTO.getUuid());
+    public Mono<Integer> addTask(TaskDTO taskDTO) {
+        return taskRepository.save(taskMapper.convert(taskDTO).withCreatedAt(LocalDateTime.now())).thenReturn(taskDTO.getId());
     }
 }

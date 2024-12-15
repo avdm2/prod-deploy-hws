@@ -1,21 +1,20 @@
 package com.avdm2.entity;
 
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
+import lombok.With;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
-@Table("tasks")
-@Builder
 @Data
+@With
+@AllArgsConstructor
+@Table("tasks")
 public class TaskEntity {
 
-    @Id
-    private UUID uuid;
+    private Integer id;
 
     private String title;
 
