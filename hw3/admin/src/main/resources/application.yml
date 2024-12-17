@@ -1,0 +1,12 @@
+server:
+  port: 8086
+
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:hw2}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:admin}
+  data:
+    r2dbc:
+      repositories:
+        enabled: true
