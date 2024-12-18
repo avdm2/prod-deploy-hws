@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+type: Opaque
+data:
+  POSTGRES_USER: dXNlcg==
+  POSTGRES_PASSWORD: cGFzcw==
+  POSTGRES_DB: ZGI=
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pgadmin-secret
+type: Opaque
+data:
+  PGADMIN_DEFAULT_EMAIL: dXNlckBhZG1pbi5jb20=
+  PGADMIN_DEFAULT_PASSWORD: cGFzcw==
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-sql-config
+data:
+  init.sql: |
+    create table tasks (
+      id             bigserial primary key,
+      title          varchar,
+      description    varchar,
+      created_at     timestamp,
+      owner_username varchar
+    )
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:latest
+        ports:
+        - containerPort: 5432
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_DB
+        volumeMounts:
+        - name: init-sql
+          mountPath: /docker-entrypoint-initdb.d
+        livenessProbe:
+            exec:
+              command: ["pg_isready", "-d", "db"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+        readinessProbe:
+            exec:
+              command: ["pg_isready", "-d", "db"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+      - name: init-sql
+        configMap:
+          name: init-sql-config
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: default
+spec:
+  selector:
+    app: postgres
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      containers:
+      - name: pgadmin
+        image: dpage/pgadmin4
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        env:
+        - name: PGADMIN_DEFAULT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: pgadmin-secret
+              key: PGADMIN_DEFAULT_EMAIL
+        - name: PGADMIN_DEFAULT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pgadmin-secret
+              key: PGADMIN_DEFAULT_PASSWORD
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin-service
+  namespace: default
+spec:
+  selector:
+    app: pgadmin
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80

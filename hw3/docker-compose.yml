@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  db:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: db
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    healthcheck:
+      test: pg_isready -d db
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 15s
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@admin.com
+      PGADMIN_DEFAULT_PASSWORD: pass
+    restart: always
+    ports:
+      - "8080:80"
+    networks:
+      - postgres
+    depends_on:
+      - db
+
+  api-service:
+    container_name: api-service
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    networks:
+      - postgres
+    depends_on:
+      - db
+
+  admin-service:
+    container_name: admin-service
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    ports:
+      - "8086:8086"
+    networks:
+      - postgres
+    depends_on:
+      - db
+
+networks:
+  postgres:
+    driver: bridge
